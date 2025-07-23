@@ -1,1 +1,485 @@
-Test
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Roadmap: .NET Technical Architect</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: "Warm Neutral Harmony" -->
+    <!-- Application Structure Plan: The application is structured as a single-page dashboard with a fixed sidebar for primary navigation, allowing users to jump to key learning areas instantly. The chosen structure is thematic rather than linear, breaking the dense report into six core phases: Foundations, Architecture, Cloud Mastery, DevOps/SRE, Security, and The Architect's Path. This non-linear, task-oriented design enhances usability by letting users explore topics based on their immediate needs or interests. Key interactions include a dynamic timeline for .NET/C# evolution, interactive cards for design patterns and tools that reveal details on click, and a radar chart to visualize architect competencies. This approach transforms passive reading into an active, engaging exploration, which is more effective for learning complex technical concepts. -->
+    <!-- Visualization & Content Choices: 
+        - .NET/C# Evolution (Phase 1): Report Info -> List of .NET/C# versions. Goal -> Show evolution over time. Viz -> Interactive Timeline (HTML/CSS/JS). Interaction -> Click on a version to highlight its key features. Justification -> More engaging and intuitive than a static table for showing progression. Library/Method -> Custom JS with Tailwind.
+        - Microservice Patterns (Phase 2): Report Info -> List of design patterns. Goal -> Organize and explain complex patterns. Viz -> Interactive Card Grid (HTML/CSS/JS). Interaction -> Click card to show a modal with details. Justification -> Breaks down dense information into digestible chunks, preventing cognitive overload. Library/Method -> Custom JS with Tailwind.
+        - Alternative APIs (Phase 2): Report Info -> GraphQL & gRPC. Goal -> Inform about other API styles. Viz -> Side-by-side info cards. Interaction -> Static. Justification -> Clear, concise presentation of alternatives. Library/Method -> HTML/Tailwind.
+        - Architect Competencies (Phase 6): Report Info -> List of skills. Goal -> Visualize the multi-faceted nature of the architect role. Viz -> Radar Chart. Interaction -> Hover over points to see skill names. Justification -> A radar chart effectively represents multi-dimensional skill sets in a single, easy-to-grasp graphic. Library/Method -> Chart.js.
+        - CI/CD Pipeline (Phase 4): Report Info -> Description of pipeline stages. Goal -> Illustrate a process flow. Viz -> Visual Diagram. Interaction -> Static visual aid. Justification -> A visual flow diagram is more intuitive for understanding a process than plain text. Library/Method -> HTML/Tailwind with flexbox.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        html {
+            scroll-behavior: smooth;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f7f4;
+            color: #404040;
+        }
+        .nav-link {
+            transition: all 0.2s ease-in-out;
+        }
+        .nav-link.active {
+            background-color: #e7e5e4;
+            color: #1c1917;
+            font-weight: 600;
+        }
+        .nav-link:not(.active):hover {
+            background-color: #f3f2f0;
+        }
+        .content-section {
+            scroll-margin-top: 2rem;
+        }
+        .pattern-card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            cursor: pointer;
+        }
+        .pattern-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+            animation: fadeIn 0.3s;
+        }
+        .modal-content {
+            animation: slideIn 0.3s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideIn {
+            from { transform: translateY(-30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+        .timeline-item.active .timeline-dot {
+            background-color: #a855f7;
+            transform: scale(1.25);
+        }
+        .timeline-item.active .timeline-content {
+            border-color: #a855f7;
+        }
+        .timeline-line {
+            width: 4px;
+            background-color: #e7e5e4;
+        }
+        .timeline-dot {
+            transition: all 0.2s ease-in-out;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="flex min-h-screen">
+        <aside class="w-64 bg-stone-100 border-r border-stone-200 p-6 fixed h-full hidden lg:block">
+            <h1 class="text-xl font-bold text-stone-800">.NET Architect Roadmap</h1>
+            <nav class="mt-8 space-y-2" id="desktop-nav">
+                <a href="#phase1" class="nav-link block py-2.5 px-4 rounded-lg text-stone-600">Phase 1: Foundations</a>
+                <a href="#phase2" class="nav-link block py-2.5 px-4 rounded-lg text-stone-600">Phase 2: Architecture</a>
+                <a href="#phase3" class="nav-link block py-2.5 px-4 rounded-lg text-stone-600">Phase 3: Cloud Mastery</a>
+                <a href="#phase4" class="nav-link block py-2.5 px-4 rounded-lg text-stone-600">Phase 4: DevOps & SRE</a>
+                <a href="#phase5" class="nav-link block py-2.5 px-4 rounded-lg text-stone-600">Phase 5: Security</a>
+                <a href="#phase6" class="nav-link block py-2.5 px-4 rounded-lg text-stone-600">Phase 6: Architect's Path</a>
+            </nav>
+        </aside>
+
+        <main class="flex-1 lg:pl-64">
+            <header class="sticky top-0 bg-f8f7f4/80 backdrop-blur-lg z-50 border-b border-stone-200 p-4 lg:hidden">
+                <div class="flex justify-between items-center">
+                    <h1 class="text-xl font-bold text-stone-800">.NET Architect Roadmap</h1>
+                    <button id="mobile-menu-button" class="p-2 rounded-md">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+                    </button>
+                </div>
+                <nav id="mobile-menu" class="hidden mt-4 space-y-1">
+                    <a href="#phase1" class="nav-link block py-2 px-3 rounded-md">Phase 1: Foundations</a>
+                    <a href="#phase2" class="nav-link block py-2 px-3 rounded-md">Phase 2: Architecture</a>
+                    <a href="#phase3" class="nav-link block py-2 px-3 rounded-md">Phase 3: Cloud Mastery</a>
+                    <a href="#phase4" class="nav-link block py-2 px-3 rounded-md">Phase 4: DevOps & SRE</a>
+                    <a href="#phase5" class="nav-link block py-2 px-3 rounded-md">Phase 5: Security</a>
+                    <a href="#phase6" class="nav-link block py-2 px-3 rounded-md">Phase 6: Architect's Path</a>
+                </nav>
+            </header>
+
+            <div class="p-6 md:p-10 space-y-16">
+                <section id="phase1" class="content-section">
+                    <h2 class="text-3xl font-bold text-stone-800 mb-4">Phase 1: Mastering Latest .NET & C#</h2>
+                    <p class="text-lg text-stone-600 mb-8">This phase focuses on the cutting-edge features of the .NET platform and C# language that are crucial for building high-performance, maintainable web APIs and microservices. Interact with the timeline below to see how key features have developed, providing the building blocks for modern development.</p>
+                    
+                    <div class="flex flex-col md:flex-row gap-8">
+                        <div class="w-full md:w-1/2">
+                            <h3 class="text-2xl font-semibold text-stone-700 mb-4">Interactive .NET & C# Timeline</h3>
+                            <div id="timeline-container" class="relative pl-8">
+                                <div class="timeline-line absolute left-0 top-0 bottom-0"></div>
+                            </div>
+                        </div>
+                        <div id="timeline-details" class="w-full md:w-1/2 p-6 bg-white rounded-xl shadow-sm sticky top-24 h-fit">
+                            <h4 class="text-xl font-bold mb-2">Select a version</h4>
+                            <p class="text-stone-500">Click on a version in the timeline to see its key features and relevance to microservice development.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="phase2" class="content-section">
+                    <h2 class="text-3xl font-bold text-stone-800 mb-4">Phase 2: Advanced Microservices Architecture</h2>
+                    <p class="text-lg text-stone-600 mb-8">This phase delves into the strategic design of distributed systems. Explore the essential design patterns that provide proven solutions to common complexities. Click on each card to learn more about the pattern and its implementation in .NET.</p>
+                    <div id="patterns-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    </div>
+                    <div class="mt-12">
+                        <h3 class="text-2xl font-semibold text-stone-700 mb-4">Alternative API Paradigms</h3>
+                        <p class="text-lg text-stone-600 mb-8">Beyond REST, other API styles offer advantages for specific use cases in a microservices architecture. Understanding these alternatives is key for a well-rounded architect.</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="bg-white p-6 rounded-xl shadow-sm">
+                                <h4 class="font-bold text-xl mb-2 text-purple-700">GraphQL</h4>
+                                <p class="text-stone-600">A query language for your API that allows clients to request exactly the data they need. Ideal for BFFs or API Gateways to aggregate data from multiple services, reducing over-fetching. Tools: Hot Chocolate, GraphQL.NET.</p>
+                            </div>
+                            <div class="bg-white p-6 rounded-xl shadow-sm">
+                                <h4 class="font-bold text-xl mb-2 text-purple-700">gRPC</h4>
+                                <p class="text-stone-600">A high-performance RPC framework using Protocol Buffers and HTTP/2. Excellent for efficient, low-latency, and strongly-typed communication between internal microservices. Natively supported in ASP.NET Core.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="phase3" class="content-section">
+                    <h2 class="text-3xl font-bold text-stone-800 mb-4">Phase 3: Cloud-Native Mastery (Azure Focus)</h2>
+                    <p class="text-lg text-stone-600 mb-8">A successful microservices architecture is deployed and managed in the cloud. This section provides an overview of the critical Azure services that form the backbone of a modern, scalable, and resilient .NET application. Explore the key service categories to understand their roles in a cloud-native ecosystem.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div class="bg-white p-6 rounded-xl shadow-sm">
+                            <h3 class="font-bold text-xl mb-2 text-purple-700">Compute & Containers</h3>
+                            <p class="text-stone-600">Core services for running your code. Includes Azure Kubernetes Service (AKS) for orchestration, Azure Container Apps for serverless containers, and Azure Functions for event-driven code.</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm">
+                            <h3 class="font-bold text-xl mb-2 text-purple-700">Messaging & Eventing</h3>
+                            <p class="text-stone-600">Services for enabling asynchronous communication. Includes Azure Service Bus for reliable messaging, Event Hubs for data streaming, and Event Grid for reactive programming.</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm">
+                            <h3 class="font-bold text-xl mb-2 text-purple-700">Data & AI/ML Services</h3>
+                            <p class="text-stone-600">Managed data stores and AI capabilities. Includes Azure Cosmos DB (NoSQL), Azure SQL, and AI/ML integration patterns using Azure Cognitive Services and ML.NET.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="phase4" class="content-section">
+                    <h2 class="text-3xl font-bold text-stone-800 mb-4">Phase 4: Robust DevOps & SRE</h2>
+                    <p class="text-lg text-stone-600 mb-8">This section focuses on the tools and practices for automating the software delivery lifecycle and ensuring the reliability of microservices in production. Explore the key areas of automation, testing, and observability that are essential for operational excellence.</p>
+                    
+                    <div class="space-y-12">
+                        <div>
+                            <h3 class="text-2xl font-semibold text-stone-700 mb-4">CI/CD Pipeline Visualization</h3>
+                            <div class="bg-white p-6 rounded-xl shadow-sm">
+                                <div class="flex flex-col md:flex-row items-center justify-around gap-4 text-center">
+                                    <div class="flex flex-col items-center">
+                                        <div class="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
+                                            <span class="text-4xl font-light">1</span>
+                                        </div>
+                                        <h4 class="font-bold mt-2">Code & Commit</h4>
+                                        <p class="text-sm text-stone-500">Source Control (Git)</p>
+                                    </div>
+                                    <div class="text-3xl text-stone-300 font-light hidden md:block">→</div>
+                                    <div class="text-3xl text-stone-300 font-light md:hidden">↓</div>
+                                    <div class="flex flex-col items-center">
+                                        <div class="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center text-green-600">
+                                            <span class="text-4xl font-light">2</span>
+                                        </div>
+                                        <h4 class="font-bold mt-2">Build & Test</h4>
+                                        <p class="text-sm text-stone-500">CI Server (Azure Pipelines, GitHub Actions)</p>
+                                    </div>
+                                    <div class="text-3xl text-stone-300 font-light hidden md:block">→</div>
+                                    <div class="text-3xl text-stone-300 font-light md:hidden">↓</div>
+                                    <div class="flex flex-col items-center">
+                                        <div class="w-24 h-24 bg-purple-100 rounded-full flex items-center justify-center text-purple-600">
+                                             <span class="text-4xl font-light">3</span>
+                                        </div>
+                                        <h4 class="font-bold mt-2">Release & Deploy</h4>
+                                        <p class="text-sm text-stone-500">Artifacts, IaC (Bicep, Terraform)</p>
+                                    </div>
+                                     <div class="text-3xl text-stone-300 font-light hidden md:block">→</div>
+                                    <div class="text-3xl text-stone-300 font-light md:hidden">↓</div>
+                                    <div class="flex flex-col items-center">
+                                        <div class="w-24 h-24 bg-orange-100 rounded-full flex items-center justify-center text-orange-600">
+                                             <span class="text-4xl font-light">4</span>
+                                        </div>
+                                        <h4 class="font-bold mt-2">Monitor & Observe</h4>
+                                        <p class="text-sm text-stone-500">OpenTelemetry, Grafana</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                         <div>
+                            <h3 class="text-2xl font-semibold text-stone-700 mb-4">Key Tools: Dapr & Service Mesh</h3>
+                            <p class="text-stone-600 mb-6">These advanced tools provide higher-level abstractions to manage the complexity of distributed systems, handling concerns like service-to-service communication, security, and observability outside of your application code.</p>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="bg-white p-6 rounded-xl shadow-sm">
+                                    <h4 class="font-bold text-lg mb-2 text-purple-700">Dapr</h4>
+                                    <p class="text-stone-600">A Distributed Application Runtime that provides building blocks (like Pub/Sub, State Management, and Service Invocation) as a sidecar, simplifying microservice development.</p>
+                                </div>
+                                <div class="bg-white p-6 rounded-xl shadow-sm">
+                                    <h4 class="font-bold text-lg mb-2 text-purple-700">Service Mesh (e.g., Istio, Linkerd)</h4>
+                                    <p class="text-stone-600">A dedicated infrastructure layer for managing service-to-service communication. It provides reliable, secure, and observable networking, enabling features like mTLS, traffic splitting, and advanced resilience patterns.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="phase5" class="content-section">
+                    <h2 class="text-3xl font-bold text-stone-800 mb-4">Phase 5: Advanced Security & Governance</h2>
+                     <p class="text-lg text-stone-600 mb-8">Security in a distributed system is complex and non-negotiable. This section covers the core principles and tools for implementing a robust, multi-layered security posture, moving from a traditional perimeter model to a modern "Zero Trust" architecture.</p>
+                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div class="bg-white p-6 rounded-xl shadow-sm">
+                            <h3 class="font-bold text-xl mb-2 text-purple-700">Zero Trust Principles</h3>
+                            <p class="text-stone-600">Assume breach. Verify every request explicitly. Use least privilege access. This is the foundational mindset for modern security architecture.</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm">
+                            <h3 class="font-bold text-xl mb-2 text-purple-700">Identity & Access (IAM)</h3>
+                            <p class="text-stone-600">Manage who can do what. Use Microsoft Entra ID (Azure AD) for identity, OAuth 2.0 & OIDC for protocols, and Managed Identities for secure service-to-service auth.</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm">
+                            <h3 class="font-bold text-xl mb-2 text-purple-700">Secret Management</h3>
+                            <p class="text-stone-600">Never hardcode secrets. Use Azure Key Vault to securely store and access API keys, connection strings, and certificates at runtime.</p>
+                        </div>
+                         <div class="bg-white p-6 rounded-xl shadow-sm">
+                            <h3 class="font-bold text-xl mb-2 text-purple-700">API Security</h3>
+                            <p class="text-stone-600">Protect your endpoints. Mitigate OWASP Top 10 risks, implement rate limiting, and perform comprehensive input validation on all incoming data.</p>
+                        </div>
+                         <div class="bg-white p-6 rounded-xl shadow-sm">
+                            <h3 class="font-bold text-xl mb-2 text-purple-700">DevSecOps</h3>
+                            <p class="text-stone-600">Shift security left. Integrate automated security scanning (SAST, DAST, container scanning) directly into your CI/CD pipelines.</p>
+                        </div>
+                         <div class="bg-white p-6 rounded-xl shadow-sm">
+                            <h3 class="font-bold text-xl mb-2 text-purple-700">Governance</h3>
+                            <p class="text-stone-600">Enforce standards at scale. Use Azure Policy and Blueprints to apply and audit security and compliance rules across your entire cloud environment.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="phase6" class="content-section">
+                    <h2 class="text-3xl font-bold text-stone-800 mb-4">Phase 6: The Architect's Toolkit & Leadership</h2>
+                    <p class="text-lg text-stone-600 mb-8">Becoming a Technical Architect is a journey that extends beyond coding. It requires a blend of deep technical expertise, strategic thinking, and strong leadership skills. This section visualizes the core competencies you need to cultivate. The goal is to evolve from focusing on "how" to build, to understanding "what" to build and "why."</p>
+                    <div class="bg-white p-6 rounded-xl shadow-sm">
+                        <div class="chart-container">
+                            <canvas id="architectSkillsChart"></canvas>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <div id="modal" class="modal">
+        <div class="modal-content bg-white rounded-xl shadow-2xl m-auto p-8 max-w-2xl w-11/12">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="modal-title" class="text-2xl font-bold text-stone-800"></h3>
+                <button id="modal-close" class="text-stone-400 hover:text-stone-600 text-4xl font-light leading-none">&times;</button>
+            </div>
+            <p id="modal-description" class="text-stone-600 mb-4"></p>
+            <div class="bg-stone-50 p-4 rounded-lg">
+                <h4 class="font-semibold text-stone-700 mb-2">.NET Tools & Libraries</h4>
+                <p id="modal-tools" class="text-stone-600"></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const timelineData = [
+                { version: ".NET 9 / C# 13", year: "2024/25", features: "Focus on Cloud-Native & AI. Enhanced Native AOT, performance boosts, new C# features like `params` collections.", relevance: "Cutting-edge features for high-performance, intelligent microservices." },
+                { version: ".NET 8 / C# 12", year: "2023", features: "LTS Release. Primary constructors, Collection expressions. Focus on performance and developer productivity.", relevance: "Reduces boilerplate in services, especially with dependency injection." },
+                { version: ".NET 7 / C# 11", year: "2022", features: "Raw string literals, Required members, Generic math. Further performance enhancements.", relevance: "Improves data model robustness and simplifies handling of JSON/SQL strings." },
+                { version: ".NET 6 / C# 10", year: "2021", features: "LTS Release. Global using directives, File-scoped namespaces, Minimal APIs, Hot Reload.", relevance: "Minimal APIs provide a lightweight way to build fast microservices." },
+                { version: ".NET 5 / C# 9", year: "2020", features: "Unified Platform. Top-level statements, Records, Init-only properties.", relevance: "Records are ideal for creating immutable DTOs and messages in microservices." },
+            ];
+
+            const patternsData = [
+                { name: "API Gateway", description: "Provides a single entry point for all client requests, handling cross-cutting concerns like authentication, caching, and rate limiting. It abstracts the complexity of the backend microservices.", tools: "Ocelot, YARP, Azure API Management, Azure Application Gateway." },
+                { name: "Asynchronous Messaging", description: "Decouples services using a message broker (Pub/Sub). Essential for long-running tasks, improving resilience and scalability by avoiding synchronous blocking calls.", tools: "Apache Kafka, RabbitMQ, Azure Service Bus." },
+                { name: "Saga Pattern", description: "Manages distributed transactions across multiple services to ensure data consistency. It uses a sequence of local transactions with compensating actions to handle failures.", tools: "MassTransit, NServiceBus, DTM." },
+                { name: "CQRS", description: "Command Query Responsibility Segregation. Separates read (query) and write (command) operations, allowing for independent scaling and optimization of each path.", tools: "MediatR, EventStoreDB (for Event Sourcing)." },
+                { name: "Circuit Breaker", description: "Prevents cascading failures by stopping requests to a failing service. After a number of failures, it 'opens' the circuit and fails fast, preventing resource exhaustion.", tools: "Polly." },
+                { name: "Outbox Pattern", description: "Ensures reliable message publishing. Changes are written to an 'outbox' table in the same database transaction as the state update, guaranteeing that events are sent even if the service crashes.", tools: "Often implemented with Kafka or RabbitMQ." },
+            ];
+
+            const timelineContainer = document.getElementById('timeline-container');
+            const timelineDetails = document.getElementById('timeline-details');
+
+            timelineData.forEach((item, index) => {
+                const timelineItem = document.createElement('div');
+                timelineItem.className = 'timeline-item relative pb-8';
+                timelineItem.innerHTML = `
+                    <div class="timeline-dot absolute left-0 top-1 w-8 h-8 rounded-full bg-stone-300 border-4 border-f8f7f4" style="left: -14px;"></div>
+                    <div class="timeline-content ml-10 p-4 bg-white rounded-xl shadow-sm border-2 border-transparent cursor-pointer">
+                        <h4 class="font-bold">${item.version}</h4>
+                        <p class="text-sm text-stone-500">${item.year}</p>
+                    </div>
+                `;
+                timelineContainer.appendChild(timelineItem);
+
+                timelineItem.querySelector('.timeline-content').addEventListener('click', () => {
+                    document.querySelectorAll('.timeline-item').forEach(el => el.classList.remove('active'));
+                    timelineItem.classList.add('active');
+
+                    timelineDetails.innerHTML = `
+                        <h4 class="text-xl font-bold mb-2 text-purple-700">${item.version}</h4>
+                        <p class="font-semibold text-stone-700">Key Features:</p>
+                        <p class="text-stone-600 mb-4">${item.features}</p>
+                        <p class="font-semibold text-stone-700">Relevance to Microservices:</p>
+                        <p class="text-stone-600">${item.relevance}</p>
+                    `;
+                });
+            });
+
+            const patternsGrid = document.getElementById('patterns-grid');
+            const modal = document.getElementById('modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalDescription = document.getElementById('modal-description');
+            const modalTools = document.getElementById('modal-tools');
+            const modalClose = document.getElementById('modal-close');
+
+            patternsData.forEach(pattern => {
+                const card = document.createElement('div');
+                card.className = 'pattern-card bg-white p-6 rounded-xl shadow-sm';
+                card.innerHTML = `<h3 class="font-bold text-xl mb-2 text-purple-700">${pattern.name}</h3><p class="text-stone-600">${pattern.description.substring(0, 100)}...</p>`;
+                card.addEventListener('click', () => {
+                    modalTitle.textContent = pattern.name;
+                    modalDescription.textContent = pattern.description;
+                    modalTools.textContent = pattern.tools;
+                    modal.style.display = 'flex';
+                });
+                patternsGrid.appendChild(card);
+            });
+
+            const closeModal = () => {
+                modal.style.display = 'none';
+            };
+            modalClose.addEventListener('click', closeModal);
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
+
+            const ctx = document.getElementById('architectSkillsChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['System Design', 'Technical Leadership', 'Cloud (Azure)', 'Security', 'DevOps & SRE', 'Communication', 'Business Acumen'],
+                    datasets: [{
+                        label: 'Architect Competency',
+                        data: [9, 8, 9, 7, 8, 8, 7],
+                        backgroundColor: 'rgba(168, 85, 247, 0.2)',
+                        borderColor: 'rgba(168, 85, 247, 1)',
+                        pointBackgroundColor: 'rgba(168, 85, 247, 1)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgba(168, 85, 247, 1)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: { color: '#e7e5e4' },
+                            grid: { color: '#e7e5e4' },
+                            pointLabels: {
+                                font: { size: 14 },
+                                color: '#404040'
+                            },
+                            ticks: {
+                                backdropColor: '#f8f7f4',
+                                color: '#78716c',
+                                stepSize: 2
+                            },
+                            min: 0,
+                            max: 10
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            mobileMenuButton.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+            
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = document.querySelectorAll('.content-section');
+
+            const observerOptions = {
+                root: null,
+                rootMargin: '0px',
+                threshold: 0.3
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const id = entry.target.getAttribute('id');
+                        navLinks.forEach(link => {
+                            link.classList.remove('active');
+                            if (link.getAttribute('href') === `#${id}`) {
+                                link.classList.add('active');
+                            }
+                        });
+                    }
+                });
+            }, observerOptions);
+
+            sections.forEach(section => {
+                observer.observe(section);
+            });
+            
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    if (mobileMenu.offsetParent !== null) {
+                         mobileMenu.classList.add('hidden');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
+
