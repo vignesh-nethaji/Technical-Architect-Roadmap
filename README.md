@@ -1,4 +1,4 @@
-# Technical-Architect-Roadmap
+# [Technical-Architect-Roadmap](https://g.co/gemini/share/d1f6c4668aac)
 **Enhanced Roadmap: Latest .NET Web, Microservices & Cloud for Technical Architect**
 
 This roadmap is further enhanced to include more advanced and specialized topics, ensuring a holistic understanding for a Technical Architect role in the modern .NET and Microsoft stack, with a strong focus on microservices and cloud-native development in Azure.
